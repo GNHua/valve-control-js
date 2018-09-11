@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+  <title>Valve Control</title>
+</head>
+<body>
+  <form id="form-valve-control"></form>
+
+  <form id="form-program">
+    <label>Program: </label>
+    <input type="file">
+  </form>
+
+  <form id="form-start-cycle">
+    <input type="submit" value="Start">
+    <button>Stop</button>
+    <label>Cycles: </label>
+    <input type="number" id="cycles" value="0" min="0" required>
+    <label>Phase interval (ms): </label>
+    <input type="number" id="interval" value="100" min="0" required>
+  </form>
+
+  <form id="form-built-in-program">
+    <label>Built-in Program: </label>
+    <select name="built-in-program">
+      <option value="Toggle Valve">Toggle Valve</option>
+      <option value="5-Phase Pump">5-Phase Pump</option>
+    </select>
+    <input type="submit" value="Load">
+  </form>
+
+  <div class="modal fade" id="connectWindow" tabindex="-1" role="dialog" aria-labelledby="connectWindowLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <!-- <div class="modal-header">
+          <h5 class="modal-title" id="connectWindowLabel"></h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div> -->
+        <div class="modal-body">
+          <table class="table table-sm table-hover">
+            <thead>
+              <tr>
+                <th scope="col">#</th>
+                <th scope="col" style="width:25%">USB Port</th>
+                <th scope="col">Details</th>
+              </tr>
+            </thead>
+            <tbody>
+            </tbody>
+            </table>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-primary" id="btn-connect-USB">Connect</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    require('./renderer')
+  </script>
+</body>
+</html>
