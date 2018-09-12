@@ -1,6 +1,8 @@
 'use strict';
 
 const SerialPort = require('serialport');
+const fs = require('fs');
+const readline = require('readline');
 
 class ValveControlBase extends SerialPort {
   constructor(port) {
@@ -15,14 +17,14 @@ class ValveControlBase extends SerialPort {
         case 0x07:
           this.cycleCompleted = data.readUInt32LE(0);
           this.valveStates = [];
-          for (let i=0; i<this.settings_.REG_NUM; i++) {
+          for (let i=0; i<this.arduinoParams.REG_NUM; i++) {
             for (let j=0; j<8; j++) {
               this.valveStates[8*i+j] = ((data[i] >> j) & 1);
             }
           }
           break;
         case 0x0E:
-          this.settings_ = {
+          this.arduinoParams = {
             EEPROM_RESET_FLAG: data[0],
             REG_NUM: data[1],
             STATE_NUM: data[2],
@@ -30,6 +32,7 @@ class ValveControlBase extends SerialPort {
             BEFORE_PHASE_NUM: data[4],
             AFTER_PHASE_NUM: data[5]
           };
+          console.log(this.arduinoParams);
           break;
       }
     });
@@ -62,9 +65,9 @@ class ValveControlBase extends SerialPort {
 
     let onBytes = [];
     let maskBytes = [];
-    for (let i=0; i<this.settings_.REG_NUM; i++) {
-      onBytes[this.settings_.REG_NUM-i-1] = (onInt >>> i*8) & 0xFF;
-      maskBytes[this.settings_.REG_NUM-i-1] = (maskInt >>> i*8) & 0xFF;
+    for (let i=0; i<this.arduinoParams.REG_NUM; i++) {
+      onBytes[this.arduinoParams.REG_NUM-i-1] = (onInt >>> i*8) & 0xFF;
+      maskBytes[this.arduinoParams.REG_NUM-i-1] = (maskInt >>> i*8) & 0xFF;
     }
     this.write([0x02, index].concat(onBytes).concat(maskBytes));
   }
@@ -103,9 +106,9 @@ class ValveControlBase extends SerialPort {
 
     let onBytes = [];
     let maskBytes = [];
-    for (let i=0; i<this.settings_.REG_NUM; i++) {
-      onBytes[this.settings_.REG_NUM-i-1] = (onInt >>> i*8) & 0xFF;
-      maskBytes[this.settings_.REG_NUM-i-1] = (maskInt >>> i*8) & 0xFF;
+    for (let i=0; i<this.arduinoParams.REG_NUM; i++) {
+      onBytes[this.arduinoParams.REG_NUM-i-1] = (onInt >>> i*8) & 0xFF;
+      maskBytes[this.arduinoParams.REG_NUM-i-1] = (maskInt >>> i*8) & 0xFF;
     }
     this.write([0x08].concat(onBytes).concat(maskBytes));
   }
@@ -132,6 +135,52 @@ class ValveControlBase extends SerialPort {
   }
 }
 
+class ValveControlDevice extends ValveControlBase {
+  controlSingleValve(i, on) {
+    if (on) {
+      this.controlValve(on=[i]);
+    } else {
+      this.controlValve(off=[i]);
+    }
+  }
+
+
+}
+
+class ProgrammableSequence {
+  constructor(file) {
+    this.operations = [];
+    this.phase = [];
+    this.beforePhase = [];
+    this.afterPhase = [];
+
+    this .parseFile(file);
+  }
+
+  parseFile(file) {
+    // 0: parsing started
+    // 1: parsing CYCLE
+    // 2: parsing BEFORE
+    // 3: parsing AFTER
+
+    this.parsingStatus = 0;
+
+    const lineReader =
+      readline.createInterface({
+      input: fs.createReadStream(file, {autoClose: true})
+    });
+
+    lineReader.on('line', function(line) {
+      // TODO
+      line.trim();
+    });
+
+    lineReader.on('close', function() {
+      this.parsingStatus = null; // TODO check switch null
+    });
+  }
+}
+
 function createPort(selectedPort) {
   const openOptions = {
     baudRate: 115200,
@@ -147,4 +196,4 @@ function createPort(selectedPort) {
   return port;
 }
 
-const port = createPort('/dev/tty.wchusbserial1420');
+const port = createPort('/dev/tty.wchusbserial1470');
