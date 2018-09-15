@@ -153,8 +153,10 @@ class ProgrammableSequence {
     this.phase = [];
     this.beforePhase = [];
     this.afterPhase = [];
+    this.wrongLines = [];
+    this.parsingStatus = null;
 
-    this .parseFile(file);
+    this.parseFile(file);
   }
 
   parseFile(file) {
@@ -165,35 +167,99 @@ class ProgrammableSequence {
 
     this.parsingStatus = 0;
 
-    const lineReader =
-      readline.createInterface({
+    const lineReader = readline.createInterface({
       input: fs.createReadStream(file, {autoClose: true})
     });
 
+    let lineNum = 0;
     lineReader.on('line', function(line) {
-      // TODO
-      line.trim();
-    });
+      lineNum++;
+      let line_ = line.trim().toUpperCase();
+      if (line_) {
+        switch (line_) {
+          case 'CYCLE':
+            this.parsingStatus = 1;
+            break;
+          case 'BEFORE':
+            this.parsingStatus = 2;
+            break;
+          case 'AFTER':
+            this.parsingStatus = 3;
+            break;
+          default:
+            try {
+              this.parseLine(line_);
+            }
+            catch(error) {
+              this.wrongLines.push(lineNum);
+            }
+            break;
+        }
+      }
+    }.bind(this));
 
     lineReader.on('close', function() {
-      this.parsingStatus = null; // TODO check switch null
-    });
+      this.parsingStatus = null;
+    }.bind(this));
   }
-}
 
-function createPort(selectedPort) {
-  const openOptions = {
-    baudRate: 115200,
-    // dataBits: args.databits,
-    // parity: args.parity,
-    // stopBits: args.stopbits,
-  };
+  parseLine(line) {
+    let valveOn = [];
+    let valveOff = [];
+    for (let command of line.split(',')) {
+      command = command.trim();
+      let valveNum = command.split(' ')
+                            .filter(Boolean)
+                            .slice(1)
+                            .map(Number);
+      if (command.startsWith('ON')) {
+        valveOn = valveOn.concat(valveNum);
+      } else if (command.startsWith('OFF')) {
+        valveOff = valveOff.concat(valveNum);
+      } else {
+        throw new Error('Command must start with "ON" or "OFF"!');
+      }
+    }
 
-  const port = new ValveControlBase(selectedPort);
-  setTimeout(function() {
-    port.getEEPROMSettings();
-  }, 2000);
-  return port;
+    valveOn = [...new Set(valveOn.sort())];
+    valveOff = [...new Set(valveOff.sort())];
+    let notNumber = valveOn.concat(valveOff).filter(function(value) {
+      return !Number.isInteger(value);
+    });
+    if (notNumber.length !== 0) {
+      throw new Error('Valve number must be a integer!');
+    }
+
+    // Check if there are duplicated operation
+    let hasDuplicate = false;
+    let operationIndex = 0;
+    for (let i=0; i<this.operations.length; i++) {
+      operationIndex = i;
+      let a = (this.operations[i][0].toString() === valveOn.toString());
+      let b = (this.operations[i][1].toString() === valveOff.toString());
+      hasDuplicate = a && b;
+      if (hasDuplicate) break;
+    }
+
+    // If there is no duplicated operation, append the new one.
+    if (!hasDuplicate) {
+      operationIndex = this.operations.length;
+      this.operations.push([valveOn, valveOff]);
+    }
+
+    // Append operation index to corresponding phases
+    switch (this.parsingStatus) {
+      case 1:
+        this.phase.push(operationIndex);
+        break;
+      case 2:
+        this.beforePhase.push(operationIndex);
+        break;
+      case 3:
+        this.afterPhase.push(operationIndex);
+        break;
+    }
+  }
 }
 
 const port = createPort('/dev/tty.wchusbserial1470');
