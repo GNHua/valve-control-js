@@ -8,9 +8,9 @@ class ValveControlBase extends SerialPort {
   constructor(port) {
     super(port, {baudRate: 115200});
     // this.getEEPROMSettings();
-    this.on('open', function() {
-      console.log('Port opennnn');
-    });
+    // this.on('open', function() {
+    //   console.log('Port opennnn');
+    // });
 
     this.on('data', function(data) {
       switch (this.lastCommand) {
@@ -73,15 +73,15 @@ class ValveControlBase extends SerialPort {
   }
 
   setPhase(offset, operationIndex) {
-    this.write([0x03, offset, operationIndex]);
+    this.write([0x03, offset, ...operationIndex]);
   }
 
   setBeforePhase(offset, operationIndex) {
-    this.write([0x04, offset, operationIndex]);
+    this.write([0x04, offset, ...operationIndex]);
   }
 
   setAfterPhase(offset, operationIndex) {
-    this.write([0x05, offset, operationIndex]);
+    this.write([0x05, offset, ...operationIndex]);
   }
 
   start(cycles, phaseIntervalMillis) {
@@ -144,7 +144,50 @@ class ValveControlDevice extends ValveControlBase {
     }
   }
 
+  makeProgrammableCycle(file) {
+    ps = ProgrammableSequence(file);
+    if (ps.wrongLines.length !== 0) {
+      return ps.wrongLines;
+    } else {
+      this.valveSequence = ps;
+    }
+  }
 
+  uploadProgram() {
+    this.setTotalPhases(this.valveSequence.phase.length,
+                        this.valveSequence.beforePhase.length,
+                        this.valveSequence.afterPhase.length);
+
+    for (let i=0; i<this.valveSequence.operations.length; i++) {
+      let valveOn = this.valveSequence.operations[0];
+      let valveOff = this.valveSequence.operations[1];
+      this.setOperation(index=i, on=valveOn, off=valveOff);
+    }
+
+    let rowSize = 20;
+    for (let i=0; i<this.phase.length; i+=rowSize) {
+      let end = Math.min(this.phase.length, i+rowSize);
+      this.setPhase(i, this.phase.slice(i, end));
+    }
+    for (let i=0; i<this.beforePhase.length; i+=rowSize) {
+      let end = Math.min(this.beforephase.length, i+rowSize);
+      this.setBeforePhase(i, this.beforephase.slice(i, end));
+    }
+    for (let i=0; i<this.afterPhase.length; i+=rowSize) {
+      let end = Math.min(this.afterphase.length, i+rowSize);
+      this.setAfterPhase(i, this.afterphase.slice(i, end));
+    }
+  }
+
+  loadToggleValveProgram(valve) {
+    this.valveSequence = new ToggleValveSequence(valve);
+    this.uploadProgram();
+  }
+
+  load5PhasePumpProgram(inletValve, DC, outletValve) {
+    this.valveSequence = new FivePhasePumpSequence(inletValve, DC, outletValve);
+    this.uploadProgram();
+  }
 }
 
 class ProgrammableSequence {
@@ -262,4 +305,45 @@ class ProgrammableSequence {
   }
 }
 
-const port = createPort('/dev/tty.wchusbserial1470');
+class ToggleValveSequence {
+  constructor(valve) {
+    this.operations = [
+      [[valve], []],
+      [[], [valve]]
+    ];
+    this.phase = [0, 1];
+    this.beforePhase = [];
+    this.afterPhase = [];
+  }
+}
+
+class FivePhasePumpSequence {
+  constructor(inletValve, DC, outletValve) {
+    this.operations = [
+      [[outletValve], []],
+      [[DC], []],
+      [[inletValve], []],
+      [[], [inletValve, DC]],
+      [[], [outletValve]]
+    ];
+    this.phase = [3, 2, 4, 1, 0];
+    this.beforePhase = [0, 1, 2];
+    this.afterPhase = [0];
+  }
+}
+
+function createPort(port) {
+  const port = new ValveControlDevice(port);
+  setTimeout(port.getEEPROMSettings, 2000);
+}
+
+// const port = createPort('/dev/tty.wchusbserial1470');
+
+module.exports = {
+  ValveControlBase: ValveControlBase,
+  ValveControlDevice: ValveControlDevice,
+  ProgrammableSequence: ProgrammableSequence,
+  ToggleValveSequence: ToggleValveSequence,
+  FivePhasePumpSequence: FivePhasePumpSequence,
+  createPort: createPort
+};
