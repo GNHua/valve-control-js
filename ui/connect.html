@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
+  <link rel="stylesheet" href="../node_modules/bootstrap/dist/css/bootstrap.min.css">
+  <title>Connect</title>
+</head>
+<body>
+  <div class="container-fluid">
+    <table class="table table-sm table-hover">
+      <thead>
+        <tr>
+          <th scope="col">#</th>
+          <th scope="col" style="width:25%">USB Port</th>
+          <th scope="col">Details</th>
+        </tr>
+      </thead>
+      <tbody>
+      </tbody>
+    </table>
+    <div class="row justify-content-end mb-2">
+      <button type="button" class="btn btn-secondary col-3 mr-2" id="btn-close">Close</button>
+      <button type="button" class="btn btn-primary col-3 mr-3" id="btn-connect" disabled>Connect</button>
+    </div>
+  </div>
+  <script>
+    require('./connect.js')
+  </script>
+</body>
+</html>

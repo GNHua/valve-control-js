@@ -1,55 +1,85 @@
-const electron = require('electron')
-const path = require('path')
-const url = require('url')
-// const SerialPort = require('serialport')
-const SerialPort = require('serialport/test')
-const MockBinding = SerialPort.Binding
-// Create a port and enable the echo and recording.
-MockBinding.createPort('/dev/ROBOT', { echo: true, record: true })
+'use strict';
 
-const {app, BrowserWindow, ipcMain} = electron
+const electron = require('electron');
+const path = require('path');
+const url = require('url');
+const {ValveControlDevice} = require('./valve_control.js');
+const mainMenu = require('./mainMenu.js');
 
-let mainWindow
-let device
+const {app, BrowserWindow, Menu, ipcMain} = electron;
+process.env.NODE_ENV = 'dev'
 
-app.on('ready', function() {
+let mainWindow;
+let connectWindow;
+let device;
+
+app.on('ready', () => {
   // the main window does not show first 
-  mainWindow = new BrowserWindow({show: false})
+  mainWindow = new BrowserWindow({show: false});
   mainWindow.loadURL(url.format({
     pathname: path.join(__dirname, 'ui', 'index.html'),
     protocol: 'file',
     slashes: true
-  }))
-  mainWindow.once('ready-to-show', function() {
-    mainWindow.show()
-    mainWindow.webContents.send('connect')
-  })
+  }));
+  mainWindow.once('ready-to-show', () => {
+    mainWindow.show();
+    createConnectWindow();
+  });
 
-  // create main menu
-  require('./mainMenu')
+  mainWindow.on('closed', () => {
+    app.quit();
+  });
+});
 
-  mainWindow.on('closed', function() {
-    app.quit()
-  })
-})
+// create connect window
+function createConnectWindow() {
+  connectWindow = new BrowserWindow({
+    width: 600,
+    height: 400,
+    title: 'Connect',
+    parent: mainWindow,
+    modal: true
+  });
 
-ipcMain.on('start-cycles', function(e, cycles) {
+  connectWindow.loadURL(url.format({
+    pathname: path.join(__dirname, 'ui', 'connect.html'),
+    protocol: 'file',
+    slashes: true
+  }));
+
+  connectWindow.on('closed', () => {
+    connectWindow = null;
+  });
+
+  // disable menu
+  // TODO: change mainWindow to null for production
+  Menu.setApplicationMenu(mainMenu);
+}
+
+ipcMain.on('device-connect', (e, port) => {
+  device = new ValveControlDevice(port);
+  device.on('device-ready', (e) => {
+    let valveNum = device.arduinoParams.REG_NUM * 8;
+    mainWindow.webContents.send('device-ready', valveNum);
+  });
+  connectWindow.close();
+  // Menu.setApplicationMenu(mainMenu);
+});
+
+ipcMain.on('close-connect-window', (e) => {
+  app.quit();
+});
+
+ipcMain.on('valve-control', (e, i, on) => {
+  device.controlSingleValve(i, on);
+});
+
+ipcMain.on('start-cycles', (e, cycles) => {
   // TODO: replace the next line with actual code
-  console.log(cycles)
-})
-
-ipcMain.on('usb-port', function(e, port) {
-  // TODO: connect to USB port
-  console.log(port)
-  device = new SerialPort('/dev/ROBOT', function (err) {
-    if (err) {
-      return console.log('Error: ', err.message);
-    }
-  })
-  require('./device')
-})
+  console.log(cycles);
+});
 
 module.exports = {
-  'mainWindow': mainWindow,
-  'device': device
-}
+  mainWindow: mainWindow,
+  device: device,
+};

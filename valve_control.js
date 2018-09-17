@@ -3,16 +3,20 @@
 const SerialPort = require('serialport');
 const fs = require('fs');
 const readline = require('readline');
+const {ipcRenderer} = require('electron');
 
 class ValveControlBase extends SerialPort {
   constructor(port) {
     super(port, {baudRate: 115200});
     // this.getEEPROMSettings();
-    // this.on('open', function() {
-    //   console.log('Port opennnn');
-    // });
+    this.on('open', () => {
+      console.log('Port opennnn');
+      setTimeout(() => {
+        this.getEEPROMSettings();
+      }, 2000);
+    });
 
-    this.on('data', function(data) {
+    this.on('data', (data) => {
       switch (this.lastCommand) {
         case 0x07:
           this.cycleCompleted = data.readUInt32LE(0);
@@ -32,12 +36,14 @@ class ValveControlBase extends SerialPort {
             BEFORE_PHASE_NUM: data[4],
             AFTER_PHASE_NUM: data[5]
           };
+          // TODO: remove this line
           console.log(this.arduinoParams);
+          this.emit('device-ready');
           break;
       }
     });
 
-    this.on('error', function(err) {
+    this.on('error', (err) => {
       console.log('Error', err);
       process.exit(1);
     });
@@ -102,7 +108,7 @@ class ValveControlBase extends SerialPort {
     let offInt = 0;
     for (let i of on)  { onInt  |= (1 << (i-1)); }
     for (let i of off) { offInt |= (1 << (i-1)); }
-    maskInt = onInt | offInt;
+    let maskInt = onInt | offInt;
 
     let onBytes = [];
     let maskBytes = [];
@@ -138,9 +144,9 @@ class ValveControlBase extends SerialPort {
 class ValveControlDevice extends ValveControlBase {
   controlSingleValve(i, on) {
     if (on) {
-      this.controlValve(on=[i]);
+      this.controlValve([i], []);
     } else {
-      this.controlValve(off=[i]);
+      this.controlValve([], [i]);
     }
   }
 
@@ -215,7 +221,7 @@ class ProgrammableSequence {
     });
 
     let lineNum = 0;
-    lineReader.on('line', function(line) {
+    lineReader.on('line', (line) => {
       lineNum++;
       let line_ = line.trim().toUpperCase();
       if (line_) {
@@ -239,11 +245,11 @@ class ProgrammableSequence {
             break;
         }
       }
-    }.bind(this));
+    });
 
-    lineReader.on('close', function() {
+    lineReader.on('close', () => {
       this.parsingStatus = null;
-    }.bind(this));
+    });
   }
 
   parseLine(line) {
@@ -266,7 +272,7 @@ class ProgrammableSequence {
 
     valveOn = [...new Set(valveOn.sort())];
     valveOff = [...new Set(valveOff.sort())];
-    let notNumber = valveOn.concat(valveOff).filter(function(value) {
+    let notNumber = valveOn.concat(valveOff).filter((value) => {
       return !Number.isInteger(value);
     });
     if (notNumber.length !== 0) {
@@ -332,18 +338,12 @@ class FivePhasePumpSequence {
   }
 }
 
-function createPort(port) {
-  const port = new ValveControlDevice(port);
-  setTimeout(port.getEEPROMSettings, 2000);
-}
-
-// const port = createPort('/dev/tty.wchusbserial1470');
+// const device = new ValveControlDevice('/dev/tty.wchusbserial1410');
 
 module.exports = {
   ValveControlBase: ValveControlBase,
   ValveControlDevice: ValveControlDevice,
   ProgrammableSequence: ProgrammableSequence,
   ToggleValveSequence: ToggleValveSequence,
-  FivePhasePumpSequence: FivePhasePumpSequence,
-  createPort: createPort
+  FivePhasePumpSequence: FivePhasePumpSequence
 };

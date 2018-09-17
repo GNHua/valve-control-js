@@ -1,4 +1,6 @@
-const {app, Menu} = require('electron') 
+'use strict';
+
+const {app, Menu} = require('electron');
 
 // create menu template
 const mainMenuTemplate = [
@@ -9,7 +11,7 @@ const mainMenuTemplate = [
         label: 'Open...',
         accelerator: 'CmdOrCtrl+O',
         click() {
-          createOpenFileWindow()
+          createOpenFileWindow();
         }
       }
     ]
@@ -17,12 +19,6 @@ const mainMenuTemplate = [
   {
     label: 'Device',
     submenu: [
-      {
-        label: 'Connect',
-        click(menuItem, browserWindow, event) {
-          browserWindow.webContents.send('connect')
-        }
-      },
       {
         label: 'Restart Arduino'
       },
@@ -83,7 +79,7 @@ const mainMenuTemplate = [
       {
         label: 'Documentation',
         click () {
-          electron.shell.openExternal('https://electronjs.org')
+          electron.shell.openExternal('https://electronjs.org');
         }
       }
       // TODO: add update
@@ -105,7 +101,7 @@ if(process.platform == 'darwin') {
       {type: 'separator'},
       {role: 'quit'}
     ]
-  })
+  });
 }
 
 if(process.env.NODE_ENV !== 'production') {
@@ -116,7 +112,7 @@ if(process.env.NODE_ENV !== 'production') {
         label: 'Toggle DevTools',
         accelerator: 'CmdOrCtrl+I',
         click(item, focusedWindow) {
-          focusedWindow.toggleDevTools()
+          focusedWindow.toggleDevTools();
         }
       },
       {
@@ -131,6 +127,6 @@ function createOpenFileWindow() {
 }
 
 // build menu from template
-const mainMenu = Menu.buildFromTemplate(mainMenuTemplate)
-// insert menu into app
-Menu.setApplicationMenu(mainMenu)
+const mainMenu = Menu.buildFromTemplate(mainMenuTemplate);
+
+module.exports = mainMenu;
