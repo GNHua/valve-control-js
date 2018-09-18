@@ -3,6 +3,7 @@
 const {ipcRenderer, remote} = require('electron');
 const {dialog, Menu} = remote;
 
+
 // add individual valve control
 const divValveControl = document.querySelector('div#valve-control');
 
@@ -32,6 +33,14 @@ ipcRenderer.on('device-ready', (e, valveNum) => {
 
     divValveControl.appendChild(span);
   }
+});
+
+ipcRenderer.on('device-stopped-completed', (e, cycleCompleted, valveStates) => {
+  const valveSwitches = document.querySelectorAll('input.switch');
+  valveSwitches.forEach((valveSwitch, index) => {
+    valveSwitch.removeAttribute('disabled');
+    valveSwitch.checked = valveStates[index];
+  });
 });
 
 
@@ -78,6 +87,10 @@ buttonStartStop.addEventListener('click', (e) => {
     toStart = false;
     buttonStartStop.innerHTML = 'Start';
   }
+  const valveSwitches = document.querySelectorAll('input.switch');
+  valveSwitches.forEach((valveSwitch) => {
+    valveSwitch.setAttribute('disabled', true);
+  });
   ipcRenderer.send('start-stop-cycles', toStart, cycles, phaseIntervalMillis);
 });
 

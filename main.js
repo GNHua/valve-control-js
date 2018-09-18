@@ -113,6 +113,13 @@ ipcMain.on('device-connect', (e, port) => {
     const valveNum = REG_NUM * 8;
     mainWindow.webContents.send('device-ready', valveNum);
   });
+  app.device.on('device-stopped-completed', (e) => {
+    mainWindow.webContents.send(
+      'device-stopped-completed',
+      app.device.cycleCompleted,
+      app.device.valveStates
+    );
+  });
   connectWindow.close();
 });
 

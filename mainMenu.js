@@ -50,7 +50,7 @@ const mainMenuTemplate = [
           shell.openExternal('https://github.com/GNHua/valve-control-js');
         }
       }
-      // TODO: add update
+      // TODO: add updater
     ]
   }
 ];

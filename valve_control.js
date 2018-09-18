@@ -15,14 +15,25 @@ class ValveControlBase extends SerialPort {
 
     this.on('data', (data) => {
       switch (this.lastCommand) {
-        case 0x07:
-          this.cycleCompleted = data.readUInt32LE(0);
+        case 0x06:
+          this.cycleCompleted = -1;
           this.valveStates = [];
           for (let i=0; i<this.arduinoParams.REG_NUM; i++) {
             for (let j=0; j<8; j++) {
               this.valveStates[8*i+j] = ((data[i] >> j) & 1);
             }
           }
+          this.emit('device-stopped-completed');
+          break;
+        case 0x07:
+          this.cycleCompleted = data.readUInt32LE(0);
+          this.valveStates = [];
+          for (let i=0; i<this.arduinoParams.REG_NUM; i++) {
+            for (let j=0; j<8; j++) {
+              this.valveStates[8*i+j] = ((data[i+32] >> j) & 1);
+            }
+          }
+          this.emit('device-stopped-completed');
           break;
         case 0x0E:
           this.arduinoParams = {
@@ -43,11 +54,6 @@ class ValveControlBase extends SerialPort {
       console.log('Error', err);
       process.exit(1);
     });
-  }
-
-  write(command, callback) {
-    this.lastCommand = command[0];
-    super.write(command, callback);
   }
 
   setRegNum(n) {
@@ -89,6 +95,7 @@ class ValveControlBase extends SerialPort {
   }
 
   start(cycles, phaseIntervalMillis) {
+    this.lastCommand = 0x06;
     const cmd = Buffer.from(0x06);
     const cyclesBuf = Buffer.allocUnsafe(4);
     const phaseIntervalMillisBuf = Buffer.allocUnsafe(4);
@@ -98,6 +105,7 @@ class ValveControlBase extends SerialPort {
   }
 
   stop() {
+    this.lastCommnad = 0x07;
     this.write([0x07]);
   }
 
@@ -134,6 +142,7 @@ class ValveControlBase extends SerialPort {
   }
 
   getEEPROMSettings() {
+    this.lastCommand = 0x0E;
     this.flush();
     this.write([0x0E]);
   }
