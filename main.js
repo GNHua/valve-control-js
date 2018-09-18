@@ -5,7 +5,7 @@ const path = require('path');
 const url = require('url');
 // TODO: use actual valve control module
 const {ValveControlDevice} = require('./valve_control_dummy.js');
-const {mainMenu, emptyMenu} = require('./mainMenu.js');
+const {mainMenu} = require('./mainMenu.js');
 
 
 process.env.NODE_ENV = 'dev'
@@ -19,7 +19,7 @@ app.on('ready', () => {
   // the main window does not show first 
   mainWindow = new BrowserWindow({show: false});
   mainWindow.loadURL(url.format({
-    pathname: path.join(__dirname, 'ui', 'index.html'),
+    pathname: path.join(__dirname, 'renderer', 'index.html'),
     protocol: 'file',
     slashes: true
   }));
@@ -44,7 +44,7 @@ function createConnectWindow() {
   });
 
   connectWindow.loadURL(url.format({
-    pathname: path.join(__dirname, 'ui', 'connect.html'),
+    pathname: path.join(__dirname, 'renderer', 'connect.html'),
     protocol: 'file',
     slashes: true
   }));
@@ -54,7 +54,7 @@ function createConnectWindow() {
     Menu.setApplicationMenu(mainMenu);
   });
 
-  Menu.setApplicationMenu(emptyMenu);
+  Menu.setApplicationMenu(new Menu());
 }
 
 // create toggle valve window
@@ -68,7 +68,7 @@ function createToggleValveWindow() {
   });
 
   toggleValveWindow.loadURL(url.format({
-    pathname: path.join(__dirname, 'ui', 'setToggleValve.html'),
+    pathname: path.join(__dirname, 'renderer', 'setToggleValve.html'),
     protocol: 'file',
     slashes: true
   }));
@@ -78,7 +78,7 @@ function createToggleValveWindow() {
     Menu.setApplicationMenu(mainMenu);
   });
 
-  Menu.setApplicationMenu(emptyMenu);
+  Menu.setApplicationMenu(new Menu());
 }
 
 // create set 5 phase pump window
@@ -92,7 +92,7 @@ function create5PhasePumpWindow() {
   });
 
   fivePhasePumpWindow.loadURL(url.format({
-    pathname: path.join(__dirname, 'ui', 'set5PhasePump.html'),
+    pathname: path.join(__dirname, 'renderer', 'set5PhasePump.html'),
     protocol: 'file',
     slashes: true
   }));
@@ -102,13 +102,15 @@ function create5PhasePumpWindow() {
     Menu.setApplicationMenu(mainMenu);
   });
 
-  Menu.setApplicationMenu(emptyMenu);
+  Menu.setApplicationMenu(new Menu());
 }
 
 ipcMain.on('device-connect', (e, port) => {
   app.device = new ValveControlDevice(port);
   app.device.on('device-ready', (e) => {
-    let valveNum = app.device.arduinoParams.REG_NUM * 8;
+    const REG_NUM = app.device.arduinoParams.REG_NUM;
+    mainMenu.getMenuItemById('shift-register-' + REG_NUM).checked = true;
+    const valveNum = REG_NUM * 8;
     mainWindow.webContents.send('device-ready', valveNum);
   });
   connectWindow.close();
@@ -123,7 +125,6 @@ ipcMain.on('valve-control', (e, i, on) => {
 });
 
 ipcMain.on('program-selected', (e, fileName) => {
-  console.log(fileName); // TODO: remove this line
   app.device.makeProgrammableCycle(fileName);
   app.device.uploadProgram();
 });

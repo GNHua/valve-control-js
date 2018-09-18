@@ -1,14 +1,14 @@
 'use strict';
 
 const {ipcRenderer, remote} = require('electron');
-const {dialog} = remote;
-
+const {dialog, Menu} = remote;
 
 // add individual valve control
-const formValveControl = document.querySelector('div#valve-control');
+const divValveControl = document.querySelector('div#valve-control');
 
 // TODO: read the actual number of valves from device
 ipcRenderer.on('device-ready', (e, valveNum) => {
+  divValveControl.innerHTML = '';
   for(let i=1; i<=valveNum; i++) {
     let span = document.createElement('span');
     span.className = 'switch switch-sm';
@@ -30,7 +30,7 @@ ipcRenderer.on('device-ready', (e, valveNum) => {
       ipcRenderer.send('valve-control', i, input.checked);
     });
 
-    formValveControl.appendChild(span);
+    divValveControl.appendChild(span);
   }
 });
 
@@ -41,12 +41,24 @@ const buttonStartStop = document.querySelector('button#start-stop-cycles');
 
 // open a program file
 buttonChooseProgram.addEventListener('click', (e) => {
-  dialog.showOpenDialog({title: 'Choose a program', multiSelections: false}, (filePaths) => {
-    let fileName = filePaths[0];
-    inputFileName.value = fileName;
-    ipcRenderer.send('program-selected', fileName);
-    buttonStartStop.removeAttribute('disabled');
-  });
+  const currentMenu = Menu.getApplicationMenu();
+  Menu.setApplicationMenu(new Menu());
+  dialog.showOpenDialog(
+    remote.getCurrentWindow(),
+    {
+      title: 'Choose a program',
+      multiSelections: false
+    },
+    (filePaths) => {
+      if (filePaths) {
+        let fileName = filePaths[0];
+        inputFileName.value = fileName;
+        ipcRenderer.send('program-selected', fileName);
+        buttonStartStop.removeAttribute('disabled');
+      }
+      Menu.setApplicationMenu(currentMenu);
+    }
+  );
 });
 
 
@@ -86,4 +98,16 @@ ipcRenderer.on('set-toggle-valve', (e, valve) => {
 ipcRenderer.on('set-5-phase-pump', (e, inletValve, DC, outletValve) => {
   inputFileName.value = `Built-in Program: 5-Phase Valve (inlet valve: ${inletValve}, DC: ${DC}, outlet valve: ${outletValve})`;
   buttonStartStop.removeAttribute('disabled');
+});
+
+ipcRenderer.on('program-selected', (e, fileName) => {
+  inputFileName.value = fileName;
+  buttonStartStop.removeAttribute('disabled');
+});
+
+ipcRenderer.on('clear-shift-register', () => {
+  const valveSwitches = document.querySelectorAll('input.switch');
+  valveSwitches.forEach((valveSwitch) => {
+    valveSwitch.checked = false;
+  });
 });

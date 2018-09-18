@@ -1,18 +1,18 @@
 'use strict';
 
-const {app, Menu, dialog, BrowserWindow} = require('electron');
+const {app, Menu, MenuItem, dialog, shell} = require('electron');
 
 // create menu template
 const mainMenuTemplate = [
   {
     label: 'File',
+    id: 'file',
     submenu: [
       {
         label: 'Open...',
+        id: 'open',
         accelerator: 'CmdOrCtrl+O',
-        click(menuItem, focusedWindow, event) {
-          createOpenFileWindow(focusedWindow);
-        }
+        click(menuItem, focusedWindow, event) { createOpenFileWindow(focusedWindow); }
       }
     ]
   },
@@ -27,54 +27,17 @@ const mainMenuTemplate = [
         label: 'Turn Off All',
         click(menuItem, focusedWindow, event) {
           app.device.clearShiftRegister();
-          focusedWindow.close();
+          focusedWindow.webContents.send('clear-shift-register');
         }
       },
       {
-        label: 'Start'
-      },
-      {
-        label: 'Stop'
+        label: 'Flush Serial Port',
+        click() { app.device.flush(); }
       },
       {
         label: 'Shift Register',
-        submenu: [
-          {
-            label: '1',
-            type: 'radio'
-          },
-          {
-            label: '2',
-            type: 'radio'
-          },
-          {
-            label: '3',
-            type: 'radio'
-          },
-          {
-            label: '4',
-            type: 'radio'
-          },
-          {
-            label: '5',
-            type: 'radio'
-          },
-          {
-            label: '6',
-            type: 'radio'
-          }
-        ]
-      },
-      {
-        label: 'Serial',
-        submenu: [
-          {
-            label: 'Reset Input'
-          },
-          {
-            label: 'Reset Output'
-          }
-        ]
+        id: 'shift-register',
+        submenu: [] // populated below
       }
     ]
   },
@@ -84,7 +47,7 @@ const mainMenuTemplate = [
       {
         label: 'Documentation',
         click () {
-          electron.shell.openExternal('https://electronjs.org');
+          shell.openExternal('https://github.com/GNHua/valve-control-js');
         }
       }
       // TODO: add update
@@ -116,7 +79,7 @@ if(process.env.NODE_ENV !== 'production') {
       {
         label: 'Toggle DevTools',
         accelerator: 'CmdOrCtrl+I',
-        click(item, focusedWindow) {
+        click(menuItem, focusedWindow, event) {
           focusedWindow.toggleDevTools();
         }
       },
@@ -128,31 +91,51 @@ if(process.env.NODE_ENV !== 'production') {
 }
 
 function createOpenFileWindow(focusedWindow) {
-  // TODO: add code here
+  Menu.setApplicationMenu(emptyMenu);
   dialog.showOpenDialog(
-    new BrowserWindow({
-      show: false,
-      alwaysOnTop: true,
-      parent: focusedWindow,
-      modal: true
-    }),
+    focusedWindow,
     {
       title: 'Choose a program',
-      multiSelections: false,
-      modal: true
+      multiSelections: false
     },
     (filePaths) => {
-      let fileName = filePaths[0];
-      console.log(fileName);
+      if (filePaths) {
+        let fileName = filePaths[0];
+        app.device.makeProgrammableCycle(fileName);
+        app.device.uploadProgram();
+        focusedWindow.webContents.send('program-selected', fileName);
+      }
+      Menu.setApplicationMenu(mainMenu);
     }
   );
 }
 
+function changeShiftRegisterNum(focusedWindow, n) {
+  if (app.device.arduinoParams.REG_NUM === n) {
+    return;
+  }
+  app.device.setRegNum(n);
+  let valveNum = n * 8;
+  focusedWindow.webContents.send('device-ready', valveNum);
+}
+
 // build menu from template
 const mainMenu = Menu.buildFromTemplate(mainMenuTemplate);
-const emptyMenu = new Menu();
+
+for (let i=1; i<=6; i++) {
+  const subMenuSR = mainMenu.getMenuItemById('shift-register');
+  subMenuSR.submenu.append(
+    new MenuItem({
+      label: String(i),
+      id: 'shift-register-' + i,
+      type: 'radio',
+      click(menuItem, focusedWindow, event) {
+        changeShiftRegisterNum(focusedWindow, i);
+      }
+    })
+  );
+}
 
 module.exports = {
-  mainMenu: mainMenu,
-  emptyMenu: emptyMenu
+  mainMenu: mainMenu
 };

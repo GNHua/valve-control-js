@@ -6,8 +6,7 @@ const readline = require('readline');
 
 class ValveControlBase extends SerialPort {
   constructor(port) {
-    super(port, {baudRate: 115200});
-    this.on('open', () => {
+    super(port, {baudRate: 115200}, () => {
       console.log('Port opennnn');
       setTimeout(() => {
         this.getEEPROMSettings();
@@ -46,13 +45,15 @@ class ValveControlBase extends SerialPort {
     });
   }
 
-  write(command) {
+  write(command, callback) {
     this.lastCommand = command[0];
-    super.write(command);
+    super.write(command, callback);
   }
 
   setRegNum(n) {
-    this.write([0, n]);
+    this.write([0, n], (err) => {
+      this.getEEPROMSettings();
+    });
   }
 
   setTotalPhases(totalPhases, totalBeforePhases, totalAfterPhases) {

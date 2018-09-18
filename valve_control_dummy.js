@@ -7,6 +7,7 @@ class ValveControlDevice extends EventEmitter {
   constructor(port) {
     super();
 
+    console.log(port);
     this.arduinoParams = {REG_NUM: 4};
     setTimeout(() => {
       this.emit('device-ready');
@@ -49,6 +50,15 @@ class ValveControlDevice extends EventEmitter {
 
   clearShiftRegister() {
     console.log('Clear Shift Register');
+  }
+
+  setRegNum(n) {
+    this.arduinoParams.REG_NUM = n;
+    console.log('change reg num to', n);
+  }
+
+  flush() {
+    console.log('flush');
   }
 }
 
