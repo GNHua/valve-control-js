@@ -2,6 +2,7 @@
 
 const {remote, ipcRenderer} = require('electron');
 
+
 const inputInletValve = document.querySelector('input#inlet-valve');
 const inputDC = document.querySelector('input#DC');
 const inputOutletValve = document.querySelector('input#outlet-valve');

@@ -2,10 +2,6 @@
 
 const {ipcRenderer, remote} = require('electron');
 const {dialog} = remote;
-const fs = require('fs'); 
-// const $ = require('jquery');
-// require('popper.js');
-require('bootstrap');
 
 
 // add individual valve control
@@ -84,8 +80,10 @@ buttonLoadBuiltIn.addEventListener('click', (e) => {
 
 ipcRenderer.on('set-toggle-valve', (e, valve) => {
   inputFileName.value = `Built-in Program: Toggle Valve ${valve}`;
+  buttonStartStop.removeAttribute('disabled');
 });
 
 ipcRenderer.on('set-5-phase-pump', (e, inletValve, DC, outletValve) => {
   inputFileName.value = `Built-in Program: 5-Phase Valve (inlet valve: ${inletValve}, DC: ${DC}, outlet valve: ${outletValve})`;
+  buttonStartStop.removeAttribute('disabled');
 });

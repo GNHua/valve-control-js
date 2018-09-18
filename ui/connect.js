@@ -1,29 +1,16 @@
 'use strict';
 
-const {ipcRenderer, remote} = require('electron');
-const $ = require('jquery');
-require('popper.js');
-require('bootstrap');
+const {ipcRenderer} = require('electron');
 const SerialPort = require('serialport');
 
-$('.container-fluid').on('click', '.clickable-row', function(e) {
-  console.log($(this));
-  if($(this).hasClass('table-success')) {
-    $(this).removeClass('table-success');
-    $('#btn-connect').prop('disabled', true);
-  } else {
-    $(this).addClass('table-success').siblings().removeClass('table-success');
-    $('#btn-connect').prop('disabled', false);
-  }
-});
+
+const tbody = document.querySelector('tbody');
 
 // show all the USB ports in connect window
-let tbody = document.querySelector('tbody');
 SerialPort.list().then((ports) => {
   for (let i=0; i<ports.length; i++) {
 
     let tr = document.createElement('tr');
-    tr.className = 'clickable-row';
 
     let th = document.createElement('th');
     th.scope = 'row';
@@ -43,19 +30,36 @@ SerialPort.list().then((ports) => {
   }
 });
 
-$('#btn-connect').on('click', function(e) {
-  $('.table-success :nth-child(2)').each(function(index) {
-    let port = $(this).text();
-    ipcRenderer.send('device-connect', port);
-  });
+
+const buttonConnect = document.querySelector('button#connect');
+
+tbody.addEventListener('click', (e) => {
+  const row = e.target.parentNode;
+  if (row.classList.contains('table-success')) {
+    row.classList.remove('table-success');
+    buttonConnect.setAttribute('disabled', true);
+  } else {
+    row.classList.add('table-success');
+    buttonConnect.removeAttribute('disabled');
+  }
 });
 
-tbody.addEventListener('dblclick', function(e) {
-  let port = e.target.parentNode.children[1].innerHTML;
+buttonConnect.addEventListener('click', (e) => {
+  const td = document.querySelector('tr.table-success > td.USB-port');
+  const port = td.innerHTML;
   ipcRenderer.send('device-connect', port);
 });
 
-$('#btn-close').on('click', (e) => {
+tbody.addEventListener('dblclick', (e) => {
+  const td = e.target.parentNode.querySelector('td.USB-port');
+  const port = td.innerHTML;
+  ipcRenderer.send('device-connect', port);
+});
+
+
+const buttonClose = document.querySelector('button#close');
+
+buttonClose.addEventListener('click', (e) => {
   ipcRenderer.send('cancel-connect');
 });
 

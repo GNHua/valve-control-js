@@ -3,8 +3,10 @@
 const {app, BrowserWindow, Menu, ipcMain} = require('electron');
 const path = require('path');
 const url = require('url');
-const {ValveControlDevice} = require('./valve_control.js');
-const mainMenu = require('./mainMenu.js');
+// TODO: use actual valve control module
+const {ValveControlDevice} = require('./valve_control_dummy.js');
+const {mainMenu, emptyMenu} = require('./mainMenu.js');
+
 
 process.env.NODE_ENV = 'dev'
 
@@ -12,7 +14,6 @@ let mainWindow;
 let connectWindow;
 let toggleValveWindow;
 let fivePhasePumpWindow;
-let device;
 
 app.on('ready', () => {
   // the main window does not show first 
@@ -50,11 +51,10 @@ function createConnectWindow() {
 
   connectWindow.on('closed', () => {
     connectWindow = null;
+    Menu.setApplicationMenu(mainMenu);
   });
 
-  // disable menu
-  // TODO: change mainWindow to null for production
-  Menu.setApplicationMenu(mainMenu);
+  Menu.setApplicationMenu(emptyMenu);
 }
 
 // create toggle valve window
@@ -75,7 +75,10 @@ function createToggleValveWindow() {
 
   toggleValveWindow.on('closed', () => {
     toggleValveWindow = null;
+    Menu.setApplicationMenu(mainMenu);
   });
+
+  Menu.setApplicationMenu(emptyMenu);
 }
 
 // create set 5 phase pump window
@@ -96,17 +99,19 @@ function create5PhasePumpWindow() {
 
   fivePhasePumpWindow.on('closed', () => {
     fivePhasePumpWindow = null;
+    Menu.setApplicationMenu(mainMenu);
   });
+
+  Menu.setApplicationMenu(emptyMenu);
 }
 
 ipcMain.on('device-connect', (e, port) => {
-  device = new ValveControlDevice(port);
-  device.on('device-ready', (e) => {
-    let valveNum = device.arduinoParams.REG_NUM * 8;
+  app.device = new ValveControlDevice(port);
+  app.device.on('device-ready', (e) => {
+    let valveNum = app.device.arduinoParams.REG_NUM * 8;
     mainWindow.webContents.send('device-ready', valveNum);
   });
   connectWindow.close();
-  // Menu.setApplicationMenu(mainMenu);
 });
 
 ipcMain.on('cancel-connect', (e) => {
@@ -114,30 +119,25 @@ ipcMain.on('cancel-connect', (e) => {
 });
 
 ipcMain.on('valve-control', (e, i, on) => {
-  device.controlSingleValve(i, on);
+  app.device.controlSingleValve(i, on);
 });
 
 ipcMain.on('program-selected', (e, fileName) => {
-  // TODO: remove this line
-  console.log(fileName);
-  device.makeProgrammableCycle(fileName);
-  device.uploadProgram();
+  console.log(fileName); // TODO: remove this line
+  app.device.makeProgrammableCycle(fileName);
+  app.device.uploadProgram();
 });
 
 ipcMain.on('start-stop-cycles', (e, toStart, cycles, phaseIntervalMillis) => {
   if (toStart) {
-    // TODO: remove this line
-    console.log('start', cycles, phaseIntervalMillis);
-    // device.start(cycles, phaseIntervalMillis);
+    app.device.start(cycles, phaseIntervalMillis); // TODO: uncomment this line
   } else {
-    // TODO: remove this line
-    console.log('stop');
-    // device.stop();
+    app.device.stop(); // TODO: uncomment this line
   }
 });
 
-ipcMain.on('load-built-in', (e, indexBuiltIn) => {
-  switch (indexBuiltIn) {
+ipcMain.on('load-built-in', (e, builtInProgramIndex) => {
+  switch (builtInProgramIndex) {
     case 1:
       createToggleValveWindow();
       break;
@@ -148,20 +148,13 @@ ipcMain.on('load-built-in', (e, indexBuiltIn) => {
 });
 
 ipcMain.on('set-toggle-valve', (e, valve) => {
-  // TODO: remove this line
-  console.log('set-toggle-valve', valve);
+  // console.log('set-toggle-valve', valve); // TODO: remove this line
   mainWindow.webContents.send('set-toggle-valve', valve);
-  // device.loadToggleValveProgram(valve);
+  app.device.loadToggleValveProgram(valve); // TODO: uncomment this line
 });
 
 ipcMain.on('set-5-phase-pump', (e, inletValve, DC, outletValve) => {
-  // TODO: remove this line
-  console.log('set-5-phase-pump', inletValve, DC, outletValve);
+  // console.log('set-5-phase-pump', inletValve, DC, outletValve); // TODO: remove this line
   mainWindow.webContents.send('set-5-phase-pump', inletValve, DC, outletValve);
-  // device.load5PhasePumpProgram(inletValve, DC, outletValve);
+  app.device.load5PhasePumpProgram(inletValve, DC, outletValve); // TODO: uncomment this line
 });
-
-module.exports = {
-  mainWindow: mainWindow,
-  device: device
-};

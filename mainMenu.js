@@ -1,6 +1,6 @@
 'use strict';
 
-const {app, Menu} = require('electron');
+const {app, Menu, dialog, BrowserWindow} = require('electron');
 
 // create menu template
 const mainMenuTemplate = [
@@ -10,8 +10,8 @@ const mainMenuTemplate = [
       {
         label: 'Open...',
         accelerator: 'CmdOrCtrl+O',
-        click() {
-          createOpenFileWindow();
+        click(menuItem, focusedWindow, event) {
+          createOpenFileWindow(focusedWindow);
         }
       }
     ]
@@ -20,10 +20,15 @@ const mainMenuTemplate = [
     label: 'Device',
     submenu: [
       {
-        label: 'Restart Arduino'
+        label: 'Restart Arduino',
+        click() { app.device.restart(); }
       },
       {
-        label: 'Turn Off All'
+        label: 'Turn Off All',
+        click(menuItem, focusedWindow, event) {
+          app.device.clearShiftRegister();
+          focusedWindow.close();
+        }
       },
       {
         label: 'Start'
@@ -122,11 +127,32 @@ if(process.env.NODE_ENV !== 'production') {
   });
 }
 
-function createOpenFileWindow() {
+function createOpenFileWindow(focusedWindow) {
   // TODO: add code here
+  dialog.showOpenDialog(
+    new BrowserWindow({
+      show: false,
+      alwaysOnTop: true,
+      parent: focusedWindow,
+      modal: true
+    }),
+    {
+      title: 'Choose a program',
+      multiSelections: false,
+      modal: true
+    },
+    (filePaths) => {
+      let fileName = filePaths[0];
+      console.log(fileName);
+    }
+  );
 }
 
 // build menu from template
 const mainMenu = Menu.buildFromTemplate(mainMenuTemplate);
+const emptyMenu = new Menu();
 
-module.exports = mainMenu;
+module.exports = {
+  mainMenu: mainMenu,
+  emptyMenu: emptyMenu
+};

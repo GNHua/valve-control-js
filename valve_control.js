@@ -7,7 +7,6 @@ const readline = require('readline');
 class ValveControlBase extends SerialPort {
   constructor(port) {
     super(port, {baudRate: 115200});
-    // this.getEEPROMSettings();
     this.on('open', () => {
       console.log('Port opennnn');
       setTimeout(() => {
@@ -35,8 +34,7 @@ class ValveControlBase extends SerialPort {
             BEFORE_PHASE_NUM: data[4],
             AFTER_PHASE_NUM: data[5]
           };
-          // TODO: remove this line
-          console.log(this.arduinoParams);
+          console.log(this.arduinoParams); // TODO: remove this line
           this.emit('device-ready');
           break;
       }
