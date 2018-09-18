@@ -1,6 +1,6 @@
 'use strict';
 
-const {ipcRenderer} = require('electron');
+const {ipcRenderer, remote} = require('electron');
 const $ = require('jquery');
 require('popper.js');
 require('bootstrap');
@@ -56,6 +56,6 @@ tbody.addEventListener('dblclick', function(e) {
 });
 
 $('#btn-close').on('click', (e) => {
-  ipcRenderer.send('close-connect-window');
+  ipcRenderer.send('cancel-connect');
 });
 

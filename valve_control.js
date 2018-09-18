@@ -3,7 +3,6 @@
 const SerialPort = require('serialport');
 const fs = require('fs');
 const readline = require('readline');
-const {ipcRenderer} = require('electron');
 
 class ValveControlBase extends SerialPort {
   constructor(port) {
@@ -143,6 +142,7 @@ class ValveControlBase extends SerialPort {
 
 class ValveControlDevice extends ValveControlBase {
   controlSingleValve(i, on) {
+    console.log(i, on);
     if (on) {
       this.controlValve([i], []);
     } else {
@@ -151,7 +151,7 @@ class ValveControlDevice extends ValveControlBase {
   }
 
   makeProgrammableCycle(file) {
-    ps = ProgrammableSequence(file);
+    let ps = new ProgrammableSequence(file);
     if (ps.wrongLines.length !== 0) {
       return ps.wrongLines;
     } else {
@@ -171,17 +171,17 @@ class ValveControlDevice extends ValveControlBase {
     }
 
     let rowSize = 20;
-    for (let i=0; i<this.phase.length; i+=rowSize) {
-      let end = Math.min(this.phase.length, i+rowSize);
-      this.setPhase(i, this.phase.slice(i, end));
+    for (let i=0; i<this.valveSequence.phase.length; i+=rowSize) {
+      let end = Math.min(this.valveSequence.phase.length, i+rowSize);
+      this.setPhase(i, this.valveSequence.phase.slice(i, end));
     }
-    for (let i=0; i<this.beforePhase.length; i+=rowSize) {
-      let end = Math.min(this.beforephase.length, i+rowSize);
-      this.setBeforePhase(i, this.beforephase.slice(i, end));
+    for (let i=0; i<this.valveSequence.beforePhase.length; i+=rowSize) {
+      let end = Math.min(this.valveSequence.beforephase.length, i+rowSize);
+      this.setBeforePhase(i, this.valveSequence.beforephase.slice(i, end));
     }
-    for (let i=0; i<this.afterPhase.length; i+=rowSize) {
-      let end = Math.min(this.afterphase.length, i+rowSize);
-      this.setAfterPhase(i, this.afterphase.slice(i, end));
+    for (let i=0; i<this.valveSequence.afterPhase.length; i+=rowSize) {
+      let end = Math.min(this.valveSequence.afterphase.length, i+rowSize);
+      this.setAfterPhase(i, this.valveSequence.afterphase.slice(i, end));
     }
   }
 

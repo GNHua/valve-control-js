@@ -85,7 +85,7 @@ const mainMenuTemplate = [
       // TODO: add update
     ]
   }
-]
+];
 
 if(process.platform == 'darwin') {
   mainMenuTemplate.unshift({
@@ -119,7 +119,7 @@ if(process.env.NODE_ENV !== 'production') {
         role: 'reload'
       }
     ]
-  })
+  });
 }
 
 function createOpenFileWindow() {
