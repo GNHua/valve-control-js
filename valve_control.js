@@ -1,6 +1,7 @@
 'use strict';
 
 const SerialPort = require('serialport');
+const EventEmitter = require('events');
 const fs = require('fs');
 const readline = require('readline');
 
@@ -45,6 +46,9 @@ class ValveControlBase extends SerialPort {
           };
           this.emit('device-ready');
           break;
+        case 0x0F:
+          console.log('get-op', data);
+          break;
       }
     });
 
@@ -56,12 +60,13 @@ class ValveControlBase extends SerialPort {
 
   write(data, encoding, callback) {
     return new Promise((resolve, reject) => {
-      super.write(data, encoding, (err) => {
+      console.log(data);
+      let temp = super.write(data, encoding, (err) => {
         if (!err) {
           if (callback) {
             callback.call(this);
           }
-          resolve();
+          resolve(temp);
         } else {
           if (callback) {
             callback.call(this, err);
@@ -169,11 +174,14 @@ class ValveControlDevice extends ValveControlBase {
 
   makeProgrammableCycle(file) {
     let ps = new ProgrammableSequence(file);
-    if (ps.wrongLines.length !== 0) {
-      return ps.wrongLines;
-    } else {
-      this.valveSequence = ps;
-    }
+    ps.on('done', () => {
+      if (ps.wrongLines.length !== 0) {
+        return ps.wrongLines;
+      } else {
+        this.valveSequence = ps;
+        this.uploadProgram();
+      }
+    });
   }
 
   async uploadProgram() {
@@ -215,8 +223,9 @@ class ValveControlDevice extends ValveControlBase {
   }
 }
 
-class ProgrammableSequence {
+class ProgrammableSequence extends EventEmitter {
   constructor(file) {
+    super();
     this.operations = [];
     this.phase = [];
     this.beforePhase = [];
@@ -268,6 +277,7 @@ class ProgrammableSequence {
 
     lineReader.on('close', () => {
       this.parsingStatus = null;
+      this.emit('done');
     });
   }
 

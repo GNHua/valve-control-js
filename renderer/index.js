@@ -124,3 +124,13 @@ ipcRenderer.on('clear-shift-register', () => {
     valveSwitch.checked = false;
   });
 });
+
+
+// =========================
+const inputGetOp = document.querySelector('input#input-get-op');
+const buttonGetOp = document.querySelector('button#button-get-op');
+
+buttonGetOp.addEventListener('click', () => {
+  let row = parseInt(inputGetOp.value, 10);
+  ipcRenderer.send('get-op', row);
+});

@@ -137,7 +137,6 @@ ipcMain.on('valve-control', (e, i, on) => {
 
 ipcMain.on('program-selected', (e, fileName) => {
   app.device.makeProgrammableCycle(fileName);
-  app.device.uploadProgram();
 });
 
 ipcMain.on('start-stop-cycles', (e, toStart, cycles, phaseIntervalMillis) => {
@@ -167,4 +166,11 @@ ipcMain.on('set-toggle-valve', (e, valve) => {
 ipcMain.on('set-5-phase-pump', (e, inletValve, DC, outletValve) => {
   mainWindow.webContents.send('set-5-phase-pump', inletValve, DC, outletValve);
   app.device.load5PhasePumpProgram(inletValve, DC, outletValve);
+});
+
+// =============================
+ipcMain.on('get-op', (e, row) => {
+  console.log('ipcMain', row);
+  app.device.lastCommand = 0x0F;
+  app.device.write([0x0F, row]);
 });
