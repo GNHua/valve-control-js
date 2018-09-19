@@ -7,7 +7,6 @@ const readline = require('readline');
 class ValveControlBase extends SerialPort {
   constructor(port) {
     super(port, {baudRate: 115200}, () => {
-      console.log('Port opennnn');
       setTimeout(() => {
         this.getEEPROMSettings();
       }, 2000);
@@ -18,9 +17,9 @@ class ValveControlBase extends SerialPort {
         case 0x06:
           this.cycleCompleted = -1;
           this.valveStates = [];
-          for (let i=0; i<this.arduinoParams.REG_NUM; i++) {
+          for (let i=this.arduinoParams.REG_NUM-1; i>=0; i--) {
             for (let j=0; j<8; j++) {
-              this.valveStates[8*i+j] = ((data[i] >> j) & 1);
+              this.valveStates.push((data[i] >>> j) & 1);
             }
           }
           this.emit('device-stopped-completed');
@@ -28,9 +27,9 @@ class ValveControlBase extends SerialPort {
         case 0x07:
           this.cycleCompleted = data.readUInt32LE(0);
           this.valveStates = [];
-          for (let i=0; i<this.arduinoParams.REG_NUM; i++) {
+          for (let i=this.arduinoParams.REG_NUM-1; i>=0; i--) {
             for (let j=0; j<8; j++) {
-              this.valveStates[8*i+j] = ((data[i+32] >> j) & 1);
+              this.valveStates.push((data[i+4] >>> j) & 1);
             }
           }
           this.emit('device-stopped-completed');
@@ -44,7 +43,6 @@ class ValveControlBase extends SerialPort {
             BEFORE_PHASE_NUM: data[4],
             AFTER_PHASE_NUM: data[5]
           };
-          console.log(this.arduinoParams); // TODO: remove this line
           this.emit('device-ready');
           break;
       }
@@ -56,61 +54,36 @@ class ValveControlBase extends SerialPort {
     });
   }
 
+  write(data, encoding, callback) {
+    return new Promise((resolve, reject) => {
+      super.write(data, encoding, (err) => {
+        if (!err) {
+          if (callback) {
+            callback.call(this);
+          }
+          resolve();
+        } else {
+          if (callback) {
+            callback.call(this, err);
+          }
+          reject(err);
+        }
+      });
+    });
+  }
+
   setRegNum(n) {
-    this.write([0, n], (err) => {
+    return this.write([0, n], () => {
       this.getEEPROMSettings();
     });
   }
 
   setTotalPhases(totalPhases, totalBeforePhases, totalAfterPhases) {
-    this.write([1, totalPhases, totalBeforePhases, totalAfterPhases]);
+    return this.write([0x01, totalPhases, totalBeforePhases, totalAfterPhases]);
   }
 
-  setOperation(index, on=[], off=[]) {
-    let onInt = 0;
-    let offInt = 0;
-    for (let i of on)  { onInt  |= (1 << (i-1)); }
-    for (let i of off) { offInt |= (1 << (i-1)); }
-    maskInt = onInt | offInt;
-
-    let onBytes = [];
-    let maskBytes = [];
-    for (let i=0; i<this.arduinoParams.REG_NUM; i++) {
-      onBytes[this.arduinoParams.REG_NUM-i-1] = (onInt >>> i*8) & 0xFF;
-      maskBytes[this.arduinoParams.REG_NUM-i-1] = (maskInt >>> i*8) & 0xFF;
-    }
-    this.write([0x02, index].concat(onBytes).concat(maskBytes));
-  }
-
-  setPhase(offset, operationIndex) {
-    this.write([0x03, offset, ...operationIndex]);
-  }
-
-  setBeforePhase(offset, operationIndex) {
-    this.write([0x04, offset, ...operationIndex]);
-  }
-
-  setAfterPhase(offset, operationIndex) {
-    this.write([0x05, offset, ...operationIndex]);
-  }
-
-  start(cycles, phaseIntervalMillis) {
-    this.lastCommand = 0x06;
-    const cmd = Buffer.from(0x06);
-    const cyclesBuf = Buffer.allocUnsafe(4);
-    const phaseIntervalMillisBuf = Buffer.allocUnsafe(4);
-    cyclesBuf.writeUInt32LE(cycles, 0);
-    phaseIntervalMillisBuf.writeUInt32LE(phaseIntervalMillis, 0);
-    this.write(Buffer.concat([cmd, cyclesBuf, phaseIntervalMillisBuf]));
-  }
-
-  stop() {
-    this.lastCommnad = 0x07;
-    this.write([0x07]);
-  }
-
-  controlValve(on=[], off=[]) {
-    let onInt = 0;
+  makeOnBytesMaskBytes(on=[], off=[]) {
+    let onInt  = 0;
     let offInt = 0;
     for (let i of on)  { onInt  |= (1 << (i-1)); }
     for (let i of off) { offInt |= (1 << (i-1)); }
@@ -122,35 +95,71 @@ class ValveControlBase extends SerialPort {
       onBytes[this.arduinoParams.REG_NUM-i-1] = (onInt >>> i*8) & 0xFF;
       maskBytes[this.arduinoParams.REG_NUM-i-1] = (maskInt >>> i*8) & 0xFF;
     }
-    this.write([0x08].concat(onBytes).concat(maskBytes));
+    return [...onBytes, ...maskBytes];
+  }
+
+  setOperation(index, on=[], off=[]) {
+    let onBytesMaskBytes = this.makeOnBytesMaskBytes(on, off);
+    return this.write([0x02, index, ...onBytesMaskBytes]);
+  }
+
+  setPhase(offset, operationIndex) {
+    return this.write([0x03, offset, ...operationIndex]);
+  }
+
+  setBeforePhase(offset, operationIndex) {
+    return this.write([0x04, offset, ...operationIndex]);
+  }
+
+  setAfterPhase(offset, operationIndex) {
+    return this.write([0x05, offset, ...operationIndex]);
+  }
+
+  start(cycles, phaseIntervalMillis) {
+    this.lastCommand = 0x06;
+    const cmd = Buffer.from([0x06]);
+    const cyclesBuf = Buffer.allocUnsafe(4);
+    const phaseIntervalMillisBuf = Buffer.allocUnsafe(4);
+    cyclesBuf.writeUInt32LE(cycles, 0);
+    phaseIntervalMillisBuf.writeUInt32LE(phaseIntervalMillis, 0);
+    return this.write(Buffer.concat([cmd, cyclesBuf, phaseIntervalMillisBuf]));
+  }
+
+  stop() {
+    this.lastCommand = 0x07;
+    return this.write([0x07]);
+  }
+
+  controlValve(on=[], off=[]) {
+    let onBytesMaskBytes = this.makeOnBytesMaskBytes(on, off);
+    return this.write([0x08, ...onBytesMaskBytes]);
   }
 
   clearShiftRegister() {
-    this.write([0x09]);
+    return this.write([0x09]);
   }
 
   clear() {
-    this.write([0x0A]);
+    return this.write([0x0A]);
   }
 
   updateEEPROM(addr, data) {
-    this.write([0x0B, addr].concat(data));
+    return this.write([0x0B, addr].concat(data));
   }
 
   restart() {
-    this.write([0x0C]);
+    return this.write([0x0C]);
   }
 
   getEEPROMSettings() {
     this.lastCommand = 0x0E;
     this.flush();
-    this.write([0x0E]);
+    return this.write([0x0E]);
   }
 }
 
 class ValveControlDevice extends ValveControlBase {
   controlSingleValve(i, on) {
-    console.log(i, on);
     if (on) {
       this.controlValve([i], []);
     } else {
@@ -167,29 +176,31 @@ class ValveControlDevice extends ValveControlBase {
     }
   }
 
-  uploadProgram() {
-    this.setTotalPhases(this.valveSequence.phase.length,
-                        this.valveSequence.beforePhase.length,
-                        this.valveSequence.afterPhase.length);
+  async uploadProgram() {
+    await this.setTotalPhases(
+      this.valveSequence.phase.length,
+      this.valveSequence.beforePhase.length,
+      this.valveSequence.afterPhase.length
+    );
 
     for (let i=0; i<this.valveSequence.operations.length; i++) {
-      let valveOn = this.valveSequence.operations[0];
-      let valveOff = this.valveSequence.operations[1];
-      this.setOperation(index=i, on=valveOn, off=valveOff);
+      let valveOn = this.valveSequence.operations[i][0];
+      let valveOff = this.valveSequence.operations[i][1];
+      await this.setOperation(i, valveOn, valveOff);
     }
 
     let rowSize = 20;
     for (let i=0; i<this.valveSequence.phase.length; i+=rowSize) {
-      let end = Math.min(this.valveSequence.phase.length, i+rowSize);
-      this.setPhase(i, this.valveSequence.phase.slice(i, end));
+      let endIndex = Math.min(this.valveSequence.phase.length, i+rowSize);
+      await this.setPhase(i, this.valveSequence.phase.slice(i, endIndex));
     }
     for (let i=0; i<this.valveSequence.beforePhase.length; i+=rowSize) {
-      let end = Math.min(this.valveSequence.beforephase.length, i+rowSize);
-      this.setBeforePhase(i, this.valveSequence.beforephase.slice(i, end));
+      let endIndex = Math.min(this.valveSequence.beforePhase.length, i+rowSize);
+      await this.setBeforePhase(i, this.valveSequence.beforePhase.slice(i, endIndex));
     }
     for (let i=0; i<this.valveSequence.afterPhase.length; i+=rowSize) {
-      let end = Math.min(this.valveSequence.afterphase.length, i+rowSize);
-      this.setAfterPhase(i, this.valveSequence.afterphase.slice(i, end));
+      let endIndex = Math.min(this.valveSequence.afterPhase.length, i+rowSize);
+      await this.setAfterPhase(i, this.valveSequence.afterPhase.slice(i, endIndex));
     }
   }
 

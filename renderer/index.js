@@ -6,8 +6,8 @@ const {dialog, Menu} = remote;
 
 // add individual valve control
 const divValveControl = document.querySelector('div#valve-control');
+const buttonStartStop = document.querySelector('button#start-stop-cycles');
 
-// TODO: read the actual number of valves from device
 ipcRenderer.on('device-ready', (e, valveNum) => {
   divValveControl.innerHTML = '';
   for(let i=1; i<=valveNum; i++) {
@@ -40,13 +40,13 @@ ipcRenderer.on('device-stopped-completed', (e, cycleCompleted, valveStates) => {
   valveSwitches.forEach((valveSwitch, index) => {
     valveSwitch.removeAttribute('disabled');
     valveSwitch.checked = valveStates[index];
+    buttonStartStop.innerHTML = 'Start';
   });
 });
 
 
 const buttonChooseProgram = document.querySelector('button#choose-program-file');
 const inputFileName = document.querySelector('input#program-filename');
-const buttonStartStop = document.querySelector('button#start-stop-cycles');
 
 // open a program file
 buttonChooseProgram.addEventListener('click', (e) => {

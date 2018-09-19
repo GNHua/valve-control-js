@@ -4,7 +4,7 @@ const {app, BrowserWindow, Menu, ipcMain} = require('electron');
 const path = require('path');
 const url = require('url');
 // TODO: use actual valve control module
-const {ValveControlDevice} = require('./valve_control_dummy.js');
+const {ValveControlDevice} = require('./valve_control.js');
 const {mainMenu} = require('./mainMenu.js');
 
 
@@ -17,7 +17,11 @@ let fivePhasePumpWindow;
 
 app.on('ready', () => {
   // the main window does not show first 
-  mainWindow = new BrowserWindow({show: false});
+  mainWindow = new BrowserWindow({
+    show: false,
+    width: 800,
+    height: 400,
+  });
   mainWindow.loadURL(url.format({
     pathname: path.join(__dirname, 'renderer', 'index.html'),
     protocol: 'file',
@@ -37,7 +41,7 @@ app.on('ready', () => {
 function createConnectWindow() {
   connectWindow = new BrowserWindow({
     width: 600,
-    height: 400,
+    height: 300,
     title: 'Connect',
     parent: mainWindow,
     modal: true
@@ -138,9 +142,9 @@ ipcMain.on('program-selected', (e, fileName) => {
 
 ipcMain.on('start-stop-cycles', (e, toStart, cycles, phaseIntervalMillis) => {
   if (toStart) {
-    app.device.start(cycles, phaseIntervalMillis); // TODO: uncomment this line
+    app.device.start(cycles, phaseIntervalMillis);
   } else {
-    app.device.stop(); // TODO: uncomment this line
+    app.device.stop();
   }
 });
 
@@ -156,13 +160,11 @@ ipcMain.on('load-built-in', (e, builtInProgramIndex) => {
 });
 
 ipcMain.on('set-toggle-valve', (e, valve) => {
-  // console.log('set-toggle-valve', valve); // TODO: remove this line
   mainWindow.webContents.send('set-toggle-valve', valve);
-  app.device.loadToggleValveProgram(valve); // TODO: uncomment this line
+  app.device.loadToggleValveProgram(valve);
 });
 
 ipcMain.on('set-5-phase-pump', (e, inletValve, DC, outletValve) => {
-  // console.log('set-5-phase-pump', inletValve, DC, outletValve); // TODO: remove this line
   mainWindow.webContents.send('set-5-phase-pump', inletValve, DC, outletValve);
-  app.device.load5PhasePumpProgram(inletValve, DC, outletValve); // TODO: uncomment this line
+  app.device.load5PhasePumpProgram(inletValve, DC, outletValve);
 });
