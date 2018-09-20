@@ -20,12 +20,8 @@ SerialPort.list().then((ports) => {
     td1.className = 'USB-port';
     td1.appendChild(document.createTextNode(ports[i].comName));
 
-    let td2 = document.createElement('td');
-    // TODO: add port info to td2
-
     tr.appendChild(th);
     tr.appendChild(td1);
-    tr.appendChild(td2);
     tbody.appendChild(tr);
   }
 });
@@ -34,12 +30,17 @@ SerialPort.list().then((ports) => {
 const buttonConnect = document.querySelector('button#connect');
 
 tbody.addEventListener('click', (e) => {
-  const row = e.target.parentNode;
-  if (row.classList.contains('table-success')) {
-    row.classList.remove('table-success');
+  const clickedRow = e.target.parentNode;
+  if (clickedRow.classList.contains('table-success')) {
+    clickedRow.classList.remove('table-success');
     buttonConnect.setAttribute('disabled', true);
   } else {
-    row.classList.add('table-success');
+    clickedRow.parentNode.childNodes.forEach((row) => {
+      if (row.classList) {
+        row.classList.remove('table-success');
+      }
+    });
+    clickedRow.classList.add('table-success');
     buttonConnect.removeAttribute('disabled');
   }
 });

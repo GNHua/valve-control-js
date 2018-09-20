@@ -46,13 +46,11 @@ class ValveControlBase extends SerialPort {
           };
           this.emit('device-ready');
           break;
-        case 0x0F:
-          console.log('get-op', data);
-          break;
       }
     });
 
     this.on('error', (err) => {
+      // TODO: handle error differently
       console.log('Error', err);
       process.exit(1);
     });
@@ -60,7 +58,6 @@ class ValveControlBase extends SerialPort {
 
   write(data, encoding, callback) {
     return new Promise((resolve, reject) => {
-      console.log(data);
       let temp = super.write(data, encoding, (err) => {
         if (!err) {
           if (callback) {
@@ -71,7 +68,6 @@ class ValveControlBase extends SerialPort {
           if (callback) {
             callback.call(this, err);
           }
-          reject(err);
         }
       });
     });
@@ -172,15 +168,10 @@ class ValveControlDevice extends ValveControlBase {
     }
   }
 
-  makeProgrammableCycle(file) {
-    let ps = new ProgrammableSequence(file);
-    ps.on('done', () => {
-      if (ps.wrongLines.length !== 0) {
-        return ps.wrongLines;
-      } else {
-        this.valveSequence = ps;
-        this.uploadProgram();
-      }
+  sleepBetweenWrite() {
+    return new Promise((resolve, reject) => {
+      // must wait for 10 ms between write
+      setTimeout(() => {resolve();}, 10);
     });
   }
 
@@ -190,26 +181,43 @@ class ValveControlDevice extends ValveControlBase {
       this.valveSequence.beforePhase.length,
       this.valveSequence.afterPhase.length
     );
+    await this.sleepBetweenWrite();
 
     for (let i=0; i<this.valveSequence.operations.length; i++) {
       let valveOn = this.valveSequence.operations[i][0];
       let valveOff = this.valveSequence.operations[i][1];
       await this.setOperation(i, valveOn, valveOff);
+      await this.sleepBetweenWrite();
     }
 
     let rowSize = 20;
     for (let i=0; i<this.valveSequence.phase.length; i+=rowSize) {
       let endIndex = Math.min(this.valveSequence.phase.length, i+rowSize);
       await this.setPhase(i, this.valveSequence.phase.slice(i, endIndex));
+      await this.sleepBetweenWrite();
     }
     for (let i=0; i<this.valveSequence.beforePhase.length; i+=rowSize) {
       let endIndex = Math.min(this.valveSequence.beforePhase.length, i+rowSize);
       await this.setBeforePhase(i, this.valveSequence.beforePhase.slice(i, endIndex));
+      await this.sleepBetweenWrite();
     }
     for (let i=0; i<this.valveSequence.afterPhase.length; i+=rowSize) {
       let endIndex = Math.min(this.valveSequence.afterPhase.length, i+rowSize);
       await this.setAfterPhase(i, this.valveSequence.afterPhase.slice(i, endIndex));
+      await this.sleepBetweenWrite();
     }
+  }
+
+  loadProgram(file) {
+    let ps = new ProgrammableSequence(file);
+    ps.once('done', () => {
+      if (ps.wrongLines.length === 0) {
+        this.valveSequence = ps;
+        this.uploadProgram();
+      } else {
+        return ps.wrongLines;
+      }
+    });
   }
 
   loadToggleValveProgram(valve) {
@@ -367,7 +375,6 @@ class FivePhasePumpSequence {
   }
 }
 
-// const device = new ValveControlDevice('/dev/tty.wchusbserial1410');
 
 module.exports = {
   ValveControlBase: ValveControlBase,

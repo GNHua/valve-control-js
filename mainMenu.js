@@ -101,7 +101,7 @@ function createOpenFileWindow(focusedWindow) {
     (filePaths) => {
       if (filePaths) {
         let fileName = filePaths[0];
-        app.device.makeProgrammableCycle(fileName);
+        app.device.loadProgram(fileName);
         focusedWindow.webContents.send('program-selected', fileName);
       }
       Menu.setApplicationMenu(mainMenu);

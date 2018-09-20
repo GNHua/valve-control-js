@@ -22,7 +22,7 @@ class ValveControlDevice extends EventEmitter {
     console.log('valve', i, state);
   }
 
-  makeProgrammableCycle(file) {
+  loadProgram(file) {
     console.log('load', file);
   }
 

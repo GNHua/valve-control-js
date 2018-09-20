@@ -3,7 +3,6 @@
 const {app, BrowserWindow, Menu, ipcMain} = require('electron');
 const path = require('path');
 const url = require('url');
-// TODO: use actual valve control module
 const {ValveControlDevice} = require('./valve_control.js');
 const {mainMenu} = require('./mainMenu.js');
 
@@ -40,7 +39,7 @@ app.on('ready', () => {
 // create connect window
 function createConnectWindow() {
   connectWindow = new BrowserWindow({
-    width: 600,
+    width: 400,
     height: 300,
     title: 'Connect',
     parent: mainWindow,
@@ -136,7 +135,7 @@ ipcMain.on('valve-control', (e, i, on) => {
 });
 
 ipcMain.on('program-selected', (e, fileName) => {
-  app.device.makeProgrammableCycle(fileName);
+  app.device.loadProgram(fileName);
 });
 
 ipcMain.on('start-stop-cycles', (e, toStart, cycles, phaseIntervalMillis) => {
@@ -166,11 +165,4 @@ ipcMain.on('set-toggle-valve', (e, valve) => {
 ipcMain.on('set-5-phase-pump', (e, inletValve, DC, outletValve) => {
   mainWindow.webContents.send('set-5-phase-pump', inletValve, DC, outletValve);
   app.device.load5PhasePumpProgram(inletValve, DC, outletValve);
-});
-
-// =============================
-ipcMain.on('get-op', (e, row) => {
-  console.log('ipcMain', row);
-  app.device.lastCommand = 0x0F;
-  app.device.write([0x0F, row]);
 });

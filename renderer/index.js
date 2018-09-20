@@ -62,12 +62,17 @@ buttonChooseProgram.addEventListener('click', (e) => {
       if (filePaths) {
         let fileName = filePaths[0];
         inputFileName.value = fileName;
-        ipcRenderer.send('program-selected', fileName);
         buttonStartStop.removeAttribute('disabled');
+        ipcRenderer.send('program-selected', fileName);
       }
       Menu.setApplicationMenu(currentMenu);
     }
   );
+});
+
+ipcRenderer.on('program-selected', (e, fileName) => {
+  inputFileName.value = fileName;
+  buttonStartStop.removeAttribute('disabled');
 });
 
 
@@ -113,24 +118,9 @@ ipcRenderer.on('set-5-phase-pump', (e, inletValve, DC, outletValve) => {
   buttonStartStop.removeAttribute('disabled');
 });
 
-ipcRenderer.on('program-selected', (e, fileName) => {
-  inputFileName.value = fileName;
-  buttonStartStop.removeAttribute('disabled');
-});
-
 ipcRenderer.on('clear-shift-register', () => {
   const valveSwitches = document.querySelectorAll('input.switch');
   valveSwitches.forEach((valveSwitch) => {
     valveSwitch.checked = false;
   });
-});
-
-
-// =========================
-const inputGetOp = document.querySelector('input#input-get-op');
-const buttonGetOp = document.querySelector('button#button-get-op');
-
-buttonGetOp.addEventListener('click', () => {
-  let row = parseInt(inputGetOp.value, 10);
-  ipcRenderer.send('get-op', row);
 });
