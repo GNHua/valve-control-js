@@ -13,8 +13,10 @@ class ValveControlBase extends SerialPort {
       }, 2000);
     });
 
-    this.on('data', (data) => {
-      switch (this.lastCommand) {
+    this.on('data', (buf) => {
+      const flag = buf[0];
+      const data = buf.slice(1);
+      switch (flag) {
         case 0x06:
           this.cycleCompleted = -1;
           this.valveStates = [];
@@ -117,7 +119,6 @@ class ValveControlBase extends SerialPort {
   }
 
   start(cycles, phaseIntervalMillis) {
-    this.lastCommand = 0x06;
     const cmd = Buffer.from([0x06]);
     const cyclesBuf = Buffer.allocUnsafe(4);
     const phaseIntervalMillisBuf = Buffer.allocUnsafe(4);
@@ -127,7 +128,6 @@ class ValveControlBase extends SerialPort {
   }
 
   stop() {
-    this.lastCommand = 0x07;
     return this.write([0x07]);
   }
 
@@ -153,7 +153,6 @@ class ValveControlBase extends SerialPort {
   }
 
   getEEPROMSettings() {
-    this.lastCommand = 0x0E;
     this.flush();
     return this.write([0x0E]);
   }
