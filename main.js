@@ -4,7 +4,7 @@ const {app, BrowserWindow, Menu, ipcMain} = require('electron');
 const path = require('path');
 const url = require('url');
 const {ValveControlDevice} = require('./valve_control.js');
-process.env.NODE_ENV = 'dev'
+process.env.NODE_ENV = 'production'
 const {mainMenu, emptyMenu} = require('./mainMenu.js');
 
 
