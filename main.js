@@ -4,10 +4,9 @@ const {app, BrowserWindow, Menu, ipcMain} = require('electron');
 const path = require('path');
 const url = require('url');
 const {ValveControlDevice} = require('./valve_control.js');
-const {mainMenu} = require('./mainMenu.js');
-
-
 process.env.NODE_ENV = 'dev'
+const {mainMenu, emptyMenu} = require('./mainMenu.js');
+
 
 let mainWindow;
 let connectWindow;
@@ -57,7 +56,7 @@ function createConnectWindow() {
     Menu.setApplicationMenu(mainMenu);
   });
 
-  Menu.setApplicationMenu(new Menu());
+  Menu.setApplicationMenu(emptyMenu);
 }
 
 // create toggle valve window
@@ -81,7 +80,7 @@ function createToggleValveWindow() {
     Menu.setApplicationMenu(mainMenu);
   });
 
-  Menu.setApplicationMenu(new Menu());
+  Menu.setApplicationMenu(emptyMenu);
 }
 
 // create set 5 phase pump window
@@ -105,7 +104,7 @@ function create5PhasePumpWindow() {
     Menu.setApplicationMenu(mainMenu);
   });
 
-  Menu.setApplicationMenu(new Menu());
+  Menu.setApplicationMenu(emptyMenu);
 }
 
 ipcMain.on('device-connect', (e, port) => {

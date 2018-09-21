@@ -51,7 +51,9 @@ const inputFileName = document.querySelector('input#program-filename');
 // open a program file
 buttonChooseProgram.addEventListener('click', (e) => {
   const currentMenu = Menu.getApplicationMenu();
-  Menu.setApplicationMenu(new Menu());
+  if (process.platform === 'darwin') {
+    Menu.setApplicationMenu(new Menu());
+  }
   dialog.showOpenDialog(
     remote.getCurrentWindow(),
     {

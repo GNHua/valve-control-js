@@ -120,6 +120,7 @@ function changeShiftRegisterNum(focusedWindow, n) {
 
 // build menu from template
 const mainMenu = Menu.buildFromTemplate(mainMenuTemplate);
+const emptyMenu = (process.platform === 'darwin') ? (new Menu()) : null;
 
 for (let i=1; i<=6; i++) {
   const subMenuSR = mainMenu.getMenuItemById('shift-register');
@@ -136,5 +137,6 @@ for (let i=1; i<=6; i++) {
 }
 
 module.exports = {
-  mainMenu: mainMenu
+  mainMenu: mainMenu,
+  emptyMenu: emptyMenu
 };
