@@ -91,7 +91,9 @@ if(process.env.NODE_ENV !== 'production') {
 }
 
 function createOpenFileWindow(focusedWindow) {
-  Menu.setApplicationMenu(emptyMenu);
+  if (process.platform !== 'darwin') {
+    Menu.setApplicationMenu(emptyMenu);
+  }
   dialog.showOpenDialog(
     focusedWindow,
     {

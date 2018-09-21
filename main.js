@@ -52,11 +52,14 @@ function createConnectWindow() {
   }));
 
   connectWindow.on('closed', () => {
+    if (!app.device) {
+      app.quit();
+    }
     connectWindow = null;
     Menu.setApplicationMenu(mainMenu);
   });
 
-  Menu.setApplicationMenu(emptyMenu);
+  // Menu.setApplicationMenu(emptyMenu);
 }
 
 // create toggle valve window
@@ -126,7 +129,7 @@ ipcMain.on('device-connect', (e, port) => {
 });
 
 ipcMain.on('cancel-connect', (e) => {
-  app.quit();
+  connectWindow.close();
 });
 
 ipcMain.on('valve-control', (e, i, on) => {
