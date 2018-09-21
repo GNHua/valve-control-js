@@ -30,6 +30,9 @@ SerialPort.list().then((ports) => {
 const buttonConnect = document.querySelector('button#connect');
 
 tbody.addEventListener('click', (e) => {
+  if (e.target.tagName.toLowerCase() === 'tbody') {
+    return;
+  }
   const clickedRow = e.target.parentNode;
   if (clickedRow.classList.contains('table-success')) {
     clickedRow.classList.remove('table-success');
