@@ -64,7 +64,7 @@ function createConnectWindow() {
 function createToggleValveWindow() {
   toggleValveWindow = new BrowserWindow({
     width: 300,
-    height: 90,
+    height: 150,
     title: 'Set Toggle Valve',
     parent: mainWindow,
     modal: true
@@ -88,7 +88,7 @@ function createToggleValveWindow() {
 function create5PhasePumpWindow() {
   fivePhasePumpWindow = new BrowserWindow({
     width: 300,
-    height: 230,
+    height: 300,
     title: 'Set 5 Phase Pump',
     parent: mainWindow,
     modal: true

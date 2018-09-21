@@ -153,7 +153,6 @@ class ValveControlBase extends SerialPort {
   }
 
   getEEPROMSettings() {
-    this.flush();
     return this.write([0x0E]);
   }
 }
