@@ -5,6 +5,7 @@ const EventEmitter = require('events');
 const fs = require('fs');
 const readline = require('readline');
 
+
 class ValveControlBase extends SerialPort {
   constructor(port) {
     super(port, {baudRate: 115200}, () => {

@@ -91,8 +91,8 @@ if(process.env.NODE_ENV !== 'production') {
 }
 
 function createOpenFileWindow(focusedWindow) {
-  if (process.platform !== 'darwin') {
-    Menu.setApplicationMenu(emptyMenu);
+  if (process.platform === 'darwin') {
+    Menu.setApplicationMenu(new Menu());
   }
   dialog.showOpenDialog(
     focusedWindow,
@@ -106,7 +106,9 @@ function createOpenFileWindow(focusedWindow) {
         app.device.loadProgram(fileName);
         focusedWindow.webContents.send('program-selected', fileName);
       }
-      Menu.setApplicationMenu(mainMenu);
+      if (process.platform === 'darwin') {
+        Menu.setApplicationMenu(mainMenu);
+      }
     }
   );
 }
@@ -122,7 +124,6 @@ function changeShiftRegisterNum(focusedWindow, n) {
 
 // build menu from template
 const mainMenu = Menu.buildFromTemplate(mainMenuTemplate);
-const emptyMenu = (process.platform === 'darwin') ? (new Menu()) : null;
 
 for (let i=1; i<=6; i++) {
   const subMenuSR = mainMenu.getMenuItemById('shift-register');
@@ -139,6 +140,5 @@ for (let i=1; i<=6; i++) {
 }
 
 module.exports = {
-  mainMenu: mainMenu,
-  emptyMenu: emptyMenu
+  mainMenu: mainMenu
 };

@@ -5,7 +5,7 @@ const path = require('path');
 const url = require('url');
 const {ValveControlDevice} = require('./valve_control.js');
 process.env.NODE_ENV = 'production'
-const {mainMenu, emptyMenu} = require('./mainMenu.js');
+const {mainMenu} = require('./mainMenu.js');
 
 
 let mainWindow;
@@ -33,6 +33,8 @@ app.on('ready', () => {
   mainWindow.on('closed', () => {
     app.quit();
   });
+
+  Menu.setApplicationMenu(mainMenu);
 });
 
 // create connect window
@@ -52,14 +54,20 @@ function createConnectWindow() {
   }));
 
   connectWindow.on('closed', () => {
+    connectWindow = null;
+    if (process.platform === 'darwin') {
+      Menu.setApplicationMenu(mainMenu);
+    }
     if (!app.device) {
       app.quit();
     }
-    connectWindow = null;
-    Menu.setApplicationMenu(mainMenu);
   });
 
-  // Menu.setApplicationMenu(emptyMenu);
+  if (process.platform === 'darwin') {
+    Menu.setApplicationMenu(new Menu());
+  } else {
+    connectWindow.setMenu(null);
+  }
 }
 
 // create toggle valve window
@@ -80,10 +88,16 @@ function createToggleValveWindow() {
 
   toggleValveWindow.on('closed', () => {
     toggleValveWindow = null;
-    Menu.setApplicationMenu(mainMenu);
+    if (process.platform === 'darwin') {
+      Menu.setApplicationMenu(mainMenu);
+    }
   });
 
-  Menu.setApplicationMenu(emptyMenu);
+  if (process.platform === 'darwin') {
+    Menu.setApplicationMenu(new Menu());
+  } else {
+    toggleValveWindow.setMenu(null);
+  }
 }
 
 // create set 5 phase pump window
@@ -104,10 +118,16 @@ function create5PhasePumpWindow() {
 
   fivePhasePumpWindow.on('closed', () => {
     fivePhasePumpWindow = null;
-    Menu.setApplicationMenu(mainMenu);
+    if (process.platform === 'darwin') {
+      Menu.setApplicationMenu(mainMenu);
+    }
   });
 
-  Menu.setApplicationMenu(emptyMenu);
+  if (process.platform === 'darwin') {
+    Menu.setApplicationMenu(new Menu());
+  } else {
+    fivePhasePumpWindow.setMenu(null);
+  }
 }
 
 ipcMain.on('device-connect', (e, port) => {
